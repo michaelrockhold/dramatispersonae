@@ -2,7 +2,6 @@ import Graphiti
 
 public struct StarWarsAPI : API {
     public let resolver = StarWarsResolver()
-    public let context = StarWarsContext()
     
     public init() {}
     

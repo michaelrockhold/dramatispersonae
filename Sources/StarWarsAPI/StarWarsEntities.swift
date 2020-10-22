@@ -20,6 +20,15 @@ public struct Planet : SearchResult, Codable {
     public let rotationPeriod: Int
     public let orbitalPeriod: Int
     public var residents: [Human]
+    
+    public init(id: String, name: String, diameter: Int, rotationPeriod: Int, orbitalPeriod: Int, residents: [Human] = [Human]()) {
+        self.id = id
+        self.name = name
+        self.diameter = diameter
+        self.rotationPeriod = rotationPeriod
+        self.orbitalPeriod = orbitalPeriod
+        self.residents = residents
+    }
 }
 
 public struct Human : Character, SearchResult, Codable {
@@ -28,6 +37,14 @@ public struct Human : Character, SearchResult, Codable {
     public let friends: [String]
     public let appearsIn: [Episode]
     public let homePlanet: Planet
+    
+    public init(id: String, name: String, friends: [String], appearsIn: [Episode], homePlanet: Planet) {
+        self.id = id
+        self.name = name
+        self.friends = friends
+        self.appearsIn = appearsIn
+        self.homePlanet = homePlanet
+    }
 }
 
 public struct Droid : Character, SearchResult, Codable {
@@ -36,4 +53,12 @@ public struct Droid : Character, SearchResult, Codable {
     public let friends: [String]
     public let appearsIn: [Episode]
     public let primaryFunction: String
+    
+    public init(id: String, name: String, friends: [String], appearsIn: [Episode], primaryFunction: String) {
+        self.id = id
+        self.name = name
+        self.friends = friends
+        self.appearsIn = appearsIn
+        self.primaryFunction = primaryFunction
+    }
 }

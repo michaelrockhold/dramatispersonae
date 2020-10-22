@@ -8,16 +8,10 @@ import GraphQL
 
 import StarWarsAPI
 
-enum MyLambdaError: Error {
-    case BAD_OPERATION
-    case BAD_REQUEST
-    case BAD_WHATEVER
-}
-
 typealias In = APIGateway.V2.Request
 typealias Out = APIGateway.V2.Response
 
-public struct QueryBody: Codable {
+struct QueryBody: Codable {
     public let query: String
     public let variables: [String:GraphQL.Map]?
     
@@ -32,17 +26,17 @@ public struct QueryBody: Codable {
 // we respond with an APIGateway.V2.Response containing a JSON body
 Lambda.run { (context, request: In, callback: @escaping (Result<Out, Error>) -> Void) in
    
-    // TODO: search through a collection of endpoints?
-    guard request.context.http.method == .GET, request.context.http.path == "/search" else {
-        return callback(.failure(MyLambdaError.BAD_OPERATION))
+    enum DramatisPersonaeError: Error {
+        case BAD_REQUEST
     }
-        
+
     guard let body: QueryBody = try? request.bodyObject() else {
-        return callback(.failure(MyLambdaError.BAD_REQUEST))
+        return callback(.failure(DramatisPersonaeError.BAD_REQUEST))
     }
 
     let api = StarWarsAPI()
-    let graphql_context = api.context
+    // TODO: refactor the implementation of the Context from the API
+    let graphql_context = StarWarsDemoContext()
 
     api.execute(
         request: body.query,
@@ -51,6 +45,7 @@ Lambda.run { (context, request: In, callback: @escaping (Result<Out, Error>) -> 
         variables: body.variables ?? [:]
         
     ).whenSuccess { graphql_result in
+        // TODO: handle conditions other than complete success
         callback(.success(Out(with: graphql_result.data, statusCode: .ok)))
     }
 }
