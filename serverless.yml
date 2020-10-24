@@ -1,0 +1,74 @@
+service:
+  ${env:SERVICE_NAME}
+
+frameworkVersion: ">=1.2.0 <2.0.0"
+
+plugins:
+  - serverless-certificate-creator
+
+package:
+  artifact: .build/lambda/DramatisPersonae/lambda.zip
+
+provider:
+  name: aws
+  runtime: provided
+  region: ${env:AWS_REGION}
+  stage: ${env:DEPLOYMENT_STAGE}
+  cfnRole: ${env:CFN_ROLE}
+  environment:
+    LOG_LEVEL: "DEBUG"
+
+layers:
+  layerdir:
+    path: ./layerdir
+    name: LayerDir-${self:provider.stage}
+    description: dependencies of the endpoint lambda code
+
+functions:
+  Endpoint:
+    name: ${self:service.name}-endpoint-${self:provider.stage}
+    handler: DramatisPersonae
+    role: EndpointRole
+    memorySize: 1024
+    timeout: 30
+    layers:
+      - { Ref: LayerDirLambdaLayer }
+    environment:
+      DEPLOYMENT_STAGE: ${env:DEPLOYMENT_STAGE}
+    events:
+      - http:
+          path: api
+          method: post
+          cors: true
+      - http:
+          path: api
+          method: get
+          cors: true
+
+        
+resources:
+  Resources:
+    EndpointRole:
+      Type: AWS::IAM::Role
+      Properties:
+        RoleName: ${self:service.name}-role-${self:provider.stage}
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: sts:AssumeRole
+        Policies:
+          - PolicyName: EndpointRolePolicy
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - logs:CreateLogGroup
+                    - logs:CreateLogStream
+                    - logs:PutLogEvents
+                    - logs:DescribeLogStreams
+                  Resource: arn:aws:logs:*:*:*

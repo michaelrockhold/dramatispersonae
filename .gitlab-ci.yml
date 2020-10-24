@@ -1,0 +1,86 @@
+variables:
+  # Note that some enviroment variables we depend upon here are assumed to have been set in the
+  # executing enviroment, such as by setting them in the GitLab CI/CD Variables dashboard for this project.
+  SERVICE_NAME: 'dramatispersonae'
+  AWS_REGION: 'us-west-2'
+  AWS_ACCOUNT: '${AWS_ACCOUNT}'
+  # Variables whose definitions depend on the first set above
+  CFN_ROLE: '${AWS_CFN_ROLE}'
+
+default:
+  image: swift:5.3-amazonlinux2
+  interruptible: false
+  before_script:
+    - echo Running Default Before-Script
+
+stages:
+  - build
+  - test
+  - deploy
+
+
+build:endpoint:
+  stage: build
+  script:
+    - export
+    - yum install -y zip unzip
+    - mkdir layerdir
+    - echo "This is a test" > layerdir/message.txt
+    - swift build --product DramatisPersonae -c release
+    - ./package.sh DramatisPersonae
+  artifacts:
+      expire_in: 1 week
+      paths:
+        - .build/lambda/DramatisPersonae/lambda.zip
+        - layerdir
+  rules:
+    - when: always
+
+  
+.basedeploy: &basedeploy
+  stage: deploy
+  dependencies:
+    - build:endpoint
+  script:
+    - export
+    - curl --silent --location https://rpm.nodesource.com/setup_12.x | bash -
+    - yum -y install nodejs
+    - node -v
+    - npm -v
+    - npm install
+    - npm install -g serverless@1.83.0
+    - sls deploy --verbose
+
+
+deploy:prod:
+  <<: *basedeploy
+  variables:
+    # DO NOT CHANGE DEPLOYMENT_STAGE WHEN YOU BUILD FROM MASTER.
+    DEPLOYMENT_STAGE: 'prod'
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "master"'
+      when: always
+    - when: never
+  environment:
+    name: prod
+
+
+deploy:development:
+  <<: *basedeploy
+  variables:
+    # If desired, change DEPLOYMENT_STAGE to create an entirely different CloudFormation
+    # Stack for the query lambda and supporting parts. This is not required.
+    DEPLOYMENT_STAGE: 'dev'
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "master"'
+      when: never
+    - when: always
+  environment:
+    name: ${DEPLOYMENT_STAGE}
+
+test:endpoint:
+  stage: test
+  variables:
+    var0: 'hello'
+  script:
+    - echo Placeholder script for test ci/cd stage

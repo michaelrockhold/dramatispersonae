@@ -35,7 +35,7 @@ Lambda.run { (context, request: In, callback: @escaping (Result<Out, Error>) -> 
     }
 
     let api = StarWarsAPI()
-    // TODO: refactor the implementation of the Context from the API
+
     let graphql_context = StarWarsDemoContext()
 
     api.execute(
