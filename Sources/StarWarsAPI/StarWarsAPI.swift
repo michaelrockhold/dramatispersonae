@@ -1,9 +1,11 @@
 import Graphiti
 
 public struct StarWarsAPI : API {
-    public let resolver = StarWarsResolver()
+    public let resolver: StarWarsResolver
     
-    public init() {}
+    public init() {
+        resolver = StarWarsResolver()
+    }
     
     public let schema = try! Schema<StarWarsResolver, StarWarsContext> {
         Enum(Episode.self) {
