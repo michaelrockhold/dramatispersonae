@@ -8,7 +8,7 @@ variables:
   CFN_ROLE: '${AWS_CFN_ROLE}'
 
 default:
-  image: swift:nightly-amazonlinux2
+  image: swiftlang/swift:nightly-amazonlinux2
   interruptible: false
   before_script:
     - echo Running Default Before-Script
