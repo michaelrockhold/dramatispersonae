@@ -3,9 +3,6 @@ service:
 
 frameworkVersion: ">=1.2.0 <2.0.0"
 
-plugins:
-  - serverless-certificate-creator
-
 package:
   artifact: .build/lambda/DramatisPersonae/lambda.zip
 
