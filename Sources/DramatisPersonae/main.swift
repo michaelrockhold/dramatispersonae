@@ -34,13 +34,11 @@ Lambda.run { (context, request: In, callback: @escaping (Result<Out, Error>) -> 
         return callback(.failure(DramatisPersonaeError.BAD_REQUEST))
     }
 
-    let api = StarWarsAPI()
-
-    let graphql_context = StarWarsDemoContext()
+    let api = StarWarsAPI(context: StarWarsDemoContext())
 
     api.execute(
         request: body.query,
-        context: graphql_context,
+        context: api.context,
         on: context.eventLoop,
         variables: body.variables ?? [:]
         

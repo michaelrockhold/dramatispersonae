@@ -2,9 +2,11 @@ import Graphiti
 
 public struct StarWarsAPI : API {
     public let resolver: StarWarsResolver
+    public let context: StarWarsContext
     
-    public init() {
-        resolver = StarWarsResolver()
+    public init(context: StarWarsContext) {
+        self.context = context
+        self.resolver = StarWarsResolver()
     }
     
     public let schema = try! Schema<StarWarsResolver, StarWarsContext> {
