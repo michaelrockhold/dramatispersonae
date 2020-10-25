@@ -5,6 +5,7 @@ package:
 
 provider:
     name: aws
+    region: us-west-2
     httpApi:
         payload: '2.0'
     runtime: provided
