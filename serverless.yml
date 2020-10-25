@@ -20,10 +20,16 @@ provider:
           Resource: "*"        
 
 functions:
-    httpGet:
-        handler: DramatisPersonae
-        memorySize: 128
-        events:
-        - httpApi:
-            method: GET
-            path: /api
+  Endpoint:
+    name: ${self:service.name}-endpoint-${self:provider.stage}
+    handler: DramatisPersonae
+    memorySize: 1024
+    environment:
+      DEPLOYMENT_STAGE: ${env:DEPLOYMENT_STAGE}
+    events:
+      - http:
+          path: /invoke
+          method: post
+      - http:
+          path: /invoke
+          method: get
