@@ -23,7 +23,7 @@ public enum APIError: Error {
     case invalidHandler
 }
 
-extension APIGateway.V2.Request {
+extension APIGateway.Request {
     
     static private let decoder = JSONDecoder()
     
@@ -35,7 +35,7 @@ extension APIGateway.V2.Request {
     }
 }
 
-extension APIGateway.V2.Response {
+extension APIGateway.Response {
     
     private static let encoder = JSONEncoder()
     
@@ -50,7 +50,7 @@ extension APIGateway.V2.Response {
     public init(with error: Error, statusCode: AWSLambdaEvents.HTTPResponseStatus) {
         self.init(
             statusCode: statusCode,
-            headers: APIGateway.V2.Response.defaultHeaders,
+            headers: APIGateway.Response.defaultHeaders,
             multiValueHeaders: nil,
             body: "{\"message\":\"\(String(describing: error))\"}",
             isBase64Encoded: false
@@ -64,7 +64,7 @@ extension APIGateway.V2.Response {
         }
         self.init(
             statusCode: statusCode,
-            headers: APIGateway.V2.Response.defaultHeaders,
+            headers: APIGateway.Response.defaultHeaders,
             multiValueHeaders: nil,
             body: body,
             isBase64Encoded: false

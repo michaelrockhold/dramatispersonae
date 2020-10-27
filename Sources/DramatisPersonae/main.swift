@@ -8,8 +8,8 @@ import GraphQL
 
 import StarWarsAPI
 
-typealias In = APIGateway.V2.Request
-typealias Out = APIGateway.V2.Response
+typealias In = APIGateway.Request
+typealias Out = APIGateway.Response
 
 struct QueryBody: Codable {
     public let query: String
