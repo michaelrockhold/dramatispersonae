@@ -7,98 +7,16 @@
  */
 import StarWarsAPI
 
+import SQLite
+
 public final class StarWarsDemoContext: StarWarsContext {
-    private lazy var tatooine = Planet(
-        id:"10001",
-        name: "Tatooine",
-        diameter: 10465,
-        rotationPeriod: 23,
-        orbitalPeriod: 304
-    )
     
-    private lazy var alderaan = Planet(
-        id: "10002",
-        name: "Alderaan",
-        diameter: 12500,
-        rotationPeriod: 24,
-        orbitalPeriod: 364
-    )
+    let db: Connection
     
-    private lazy var planetData: [String: Planet] = [
-        "10001": tatooine,
-        "10002": alderaan,
-    ]
+    public init(dbfilepath: String) throws {
     
-    private lazy var luke = Human(
-        id: "1000",
-        name: "Luke Skywalker",
-        friends: ["1002", "1003", "2000", "2001"],
-        appearsIn: [.newHope, .empire, .jedi],
-        homePlanet: tatooine
-    )
-    
-    private lazy var vader = Human(
-        id: "1001",
-        name: "Darth Vader",
-        friends: [ "1004" ],
-        appearsIn: [.newHope, .empire, .jedi],
-        homePlanet: tatooine
-    )
-    
-    private lazy var han = Human(
-        id: "1002",
-        name: "Han Solo",
-        friends: ["1000", "1003", "2001"],
-        appearsIn: [.newHope, .empire, .jedi],
-        homePlanet: alderaan
-    )
-    
-    private lazy var leia = Human(
-        id: "1003",
-        name: "Leia Organa",
-        friends: ["1000", "1002", "2000", "2001"],
-        appearsIn: [.newHope, .empire, .jedi],
-        homePlanet: alderaan
-    )
-    
-    private lazy var tarkin = Human(
-        id: "1004",
-        name: "Wilhuff Tarkin",
-        friends: ["1001"],
-        appearsIn: [.newHope],
-        homePlanet: alderaan
-    )
-    
-    private lazy var humanData: [String: Human] = [
-        "1000": luke,
-        "1001": vader,
-        "1002": han,
-        "1003": leia,
-        "1004": tarkin,
-    ]
-    
-    private lazy var c3po = Droid(
-        id: "2000",
-        name: "C-3PO",
-        friends: ["1000", "1002", "1003", "2001"],
-        appearsIn: [.newHope, .empire, .jedi],
-        primaryFunction: "Protocol"
-    )
-    
-    private lazy var r2d2 = Droid(
-        id: "2001",
-        name: "R2-D2",
-        friends: [ "1000", "1002", "1003" ],
-        appearsIn: [.newHope, .empire, .jedi],
-        primaryFunction: "Astromech"
-    )
-    
-    private lazy var droidData: [String: Droid] = [
-        "2000": c3po,
-        "2001": r2d2,
-    ]
-    
-    public init() {}
+        db = try Connection(dbfilepath)
+    }
     
     /**
      * Helper function to get a character by ID.

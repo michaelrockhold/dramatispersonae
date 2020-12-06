@@ -28,14 +28,21 @@ Lambda.run { (context, request: In, callback: @escaping (Result<Out, Error>) -> 
    
     enum DramatisPersonaeError: Error {
         case BAD_REQUEST
+        case BAD_DB
     }
 
     guard let body: QueryBody = try? request.bodyObject() else {
         return callback(.failure(DramatisPersonaeError.BAD_REQUEST))
     }
 
-    let api = StarWarsAPI(context: StarWarsDemoContext())
-
+    let api: StarWarsAPI
+    do {
+        api = try StarWarsAPI(context: StarWarsDemoContext(dbfilepath: "/opt/swift/starwarsdb.sqlite3"))
+    }
+    catch {
+        return callback(.failure(DramatisPersonaeError.BAD_DB))
+    }
+    
     api.execute(
         request: body.query,
         context: api.context,
