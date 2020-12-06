@@ -37,7 +37,7 @@ Lambda.run { (context, request: In, callback: @escaping (Result<Out, Error>) -> 
 
     let api: StarWarsAPI
     do {
-        api = try StarWarsAPI(context: StarWarsDemoContext(dbfilepath: "/opt/swift/starwarsdb.sqlite3"))
+        api = try StarWarsAPI(context: StarWarsDB(connectionPath: "/opt/swift/starwarsdb.sqlite3"))
     }
     catch {
         return callback(.failure(DramatisPersonaeError.BAD_DB))
@@ -54,3 +54,26 @@ Lambda.run { (context, request: In, callback: @escaping (Result<Out, Error>) -> 
         callback(.success(Out(with: graphql_result.data, statusCode: .ok)))
     }
 }
+
+
+//let db = try StarWarsDB(connectionPath: "/Users/mr/Data/db.sqlite3")
+////let db = try StarWarsDB()
+//
+////try db.populateTables()
+//
+//guard let lukeID = db.searchCharacterID(characterName: "Luke Skywalker", characterSpecies: .Human) else {
+//    print("no such character")
+//    exit(0)
+//}
+//
+//let luke = db.getCharacter(characterID: lukeID)!
+//print(luke)
+//
+//for f in db.getFriends(of: luke) {
+//    print(f)
+//}
+//
+//print(db.search(like: "%tatoo%"))
+//print(db.search(like: "Tatooine"))
+//print(db.search(like: "% skywalker"))
+//print(db.search(like: "c-3po"))

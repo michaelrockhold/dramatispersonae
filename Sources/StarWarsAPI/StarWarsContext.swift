@@ -15,17 +15,17 @@ public protocol StarWarsContext {
     /**
      * Allows us to fetch the undisputed hero of the Star Wars trilogy, R2-D2.
      */
-    func getHero(of episode: Episode?) -> Character
+    func getHero(of episode: Episode) -> Character
     
     /**
      * Allows us to query for the human with the given id.
      */
-    func getHuman(id: String) -> Human?
+    func getHuman(id: Int64) -> Human?
     
     /**
      * Allows us to query for the droid with the given id.
      */
-    func getDroid(id: String) -> Droid?
+    func getDroid(id: Int64) -> Droid?
     
     /**
      * Allows us to get the secret backstory, or not.
