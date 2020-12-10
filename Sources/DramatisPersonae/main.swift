@@ -7,6 +7,7 @@ import Graphiti
 import GraphQL
 
 import StarWarsAPI
+import StarWarsDB
 
 typealias In = APIGateway.Request
 typealias Out = APIGateway.Response
@@ -35,14 +36,16 @@ Lambda.run { (context, request: In, callback: @escaping (Result<Out, Error>) -> 
         return callback(.failure(DramatisPersonaeError.BAD_REQUEST))
     }
 
-    let api: StarWarsAPI
+    let swcontext: StarWarsContext
     do {
-        api = try StarWarsAPI(context: StarWarsDB(connectionPath: "/opt/swift/starwarsdb.sqlite3"))
+//        swcontext = try StarWarsDB(connectionPath: "/opt/swift/starwarsdb.sqlite3")
+        swcontext = try StarWarsDB()
     }
     catch {
         return callback(.failure(DramatisPersonaeError.BAD_DB))
     }
-    
+    let api = StarWarsAPI(context: swcontext)
+
     api.execute(
         request: body.query,
         context: api.context,

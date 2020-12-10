@@ -20,12 +20,12 @@ public protocol StarWarsContext {
     /**
      * Allows us to query for the human with the given id.
      */
-    func getHuman(id: Int64) -> Human?
+    func getHuman(id: Int) -> Human?
     
     /**
      * Allows us to query for the droid with the given id.
      */
-    func getDroid(id: Int64) -> Droid?
+    func getDroid(id: Int) -> Droid?
     
     /**
      * Allows us to get the secret backstory, or not.

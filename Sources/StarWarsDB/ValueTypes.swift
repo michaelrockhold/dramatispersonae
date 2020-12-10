@@ -1,6 +1,6 @@
 //
-//  StarWarsDBTypes.swift
-//  DramatisPersonae
+//  ValueTypes.swift
+//  StarWarsDB
 //
 //  Created by Michael Rockhold on 12/6/20.
 //

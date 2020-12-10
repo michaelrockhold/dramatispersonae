@@ -42,7 +42,7 @@ public struct StarWarsResolver {
     }
 
     public struct HumanArguments : Codable {
-        public let id: Int64
+        public let id: Int
     }
     
     public func human(context: StarWarsContext, arguments: HumanArguments) -> Human? {
@@ -50,7 +50,7 @@ public struct StarWarsResolver {
     }
 
     public struct DroidArguments : Codable {
-        public let id: Int64
+        public let id: Int
     }
 
     public func droid(context: StarWarsContext, arguments: DroidArguments) -> Droid? {

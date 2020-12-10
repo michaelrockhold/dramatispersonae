@@ -8,6 +8,7 @@ let package = Package(
     products: [
         .executable(name: "DramatisPersonae", targets: ["DramatisPersonae"]),
         .library(name: "StarWarsAPI", targets: ["StarWarsAPI"]),
+        .library(name: "StarWarsDB", targets: ["StarWarsDB"]),
     ],
     dependencies: [
         // Dependencies declare other packages that this package depends on.
@@ -29,7 +30,8 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
                 .product(name: "SQLite", package: "SQLite.swift"),
                 "Graphiti",
-                "StarWarsAPI"
+                "StarWarsAPI",
+                "StarWarsDB"
             ]),
         .target(
             name: "StarWarsAPI",
@@ -37,11 +39,15 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log"),
                 "Graphiti"
             ]),
-        .testTarget(
-        	name: "DramatisPersonaeTests", 
-        	dependencies: ["DramatisPersonae"]),
+        .target(
+            name: "StarWarsDB",
+            dependencies: [
+                .product(name: "SQLite", package: "SQLite.swift"),
+                .product(name: "Logging", package: "swift-log"),
+                "StarWarsAPI"
+            ]),
         .testTarget(
         	name: "StarWarsAPITests", 
-        	dependencies: ["StarWarsAPI"])
+        	dependencies: ["StarWarsAPI", "StarWarsDB"])
     ]
 )

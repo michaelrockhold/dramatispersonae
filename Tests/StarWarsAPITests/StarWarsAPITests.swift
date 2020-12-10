@@ -1,45 +1,80 @@
+import StarWarsAPI
+import StarWarsDB
+import XCTest
 
-import NIO
-import Graphiti
+// import Graphiti
 import GraphQL
+import NIO
 
 @available(OSX 10.15, *)
-class StarWarsAPITests : XCTestCase {
-    private let api = StarWarsAPI()
-    private var group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
-    
-    deinit {
-        try? self.group.syncShutdownGracefully()
+class StarWarsAPITests: XCTestCase {
+
+    private var api: StarWarsAPI! = nil
+    private var group: EventLoopGroup! = nil
+
+    override func setUpWithError() throws {
+        group = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
+        let context = try! StarWarsDB()
+        api = StarWarsAPI(context: context)
     }
-    
-    func testHeroNameQuery() throws {
+
+    override func tearDownWithError() throws {
+        try? group?.syncShutdownGracefully()
+    }
+
+    func testHeroNameQuery1() throws {
         let query = """
         query HeroNameQuery {
-            hero {
+            hero(episode: EMPIRE) {
                 name
             }
         }
         """
-        
-        let expected = GraphQLResult(data: ["hero": ["name": "R2-D2"]])
+
+        let expected = GraphQLResult(data: ["hero": ["name": "Luke Skywalker"]])
         let expectation = XCTestExpectation()
-        
+
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
+
+    func testHeroNameQuery2() throws {
+        let query = """
+        query HeroNameQuery {
+            hero(episode: NEWHOPE) {
+                name
+            }
+        }
+        """
+
+        let expected = GraphQLResult(data: ["hero": ["name": "R2-D2"]])
+        let expectation = XCTestExpectation()
+
+        api.execute(
+            request: query,
+            context: api.context,
+            on: group!
+        ).whenSuccess { result in
+            XCTAssertEqual(result, expected)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 10)
+    }
+
 
     func testHeroNameAndFriendsQuery() throws {
         let query = """
         query HeroNameAndFriendsQuery {
-            hero {
+            hero(episode: NEWHOPE) {
                 id
                 name
                 friends {
@@ -52,7 +87,7 @@ class StarWarsAPITests : XCTestCase {
         let expected = GraphQLResult(
             data: [
                 "hero": [
-                    "id": "2001",
+                    "id": 7,
                     "name": "R2-D2",
                     "friends": [
                         ["name": "Luke Skywalker"],
@@ -64,23 +99,23 @@ class StarWarsAPITests : XCTestCase {
         )
 
         let expectation = XCTestExpectation()
-        
+
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testNestedQuery() throws {
         let query = """
         query NestedQuery {
-            hero {
+            hero(episode: NEWHOPE) {
                 name
                 friends {
                     name
@@ -131,25 +166,25 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testFetchLukeQuery() throws {
         let query = """
         query FetchLukeQuery {
-            human(id: "1000") {
+            human(id: 1) {
                 name
             }
         }
@@ -162,24 +197,24 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testFetchSomeIDQuery() throws {
         let query = """
-        query FetchSomeIDQuery($someId: String!) {
+        query FetchSomeIDQuery($someId: Int!) {
             human(id: $someId) {
                 name
             }
@@ -190,7 +225,7 @@ class StarWarsAPITests : XCTestCase {
         var expected: GraphQLResult
         var expectation: XCTestExpectation
 
-        params = ["someId": "1000"]
+        params = ["someId": 1]
 
         expected = GraphQLResult(
             data: [
@@ -199,22 +234,22 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group,
+            on: group!,
             variables: params
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
 
-        params = ["someId": "1002"]
+        params = ["someId": 3]
 
         expected = GraphQLResult(
             data: [
@@ -223,48 +258,48 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group,
+            on: group!,
             variables: params
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
 
-        params = ["someId": "not a valid id"]
+        params = ["someId": -99] // "not a valid id"
 
         expected = GraphQLResult(
             data: [
                 "human": nil,
             ]
         )
-        
+
         expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group,
+            on: group!,
             variables: params
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testFetchLukeAliasedQuery() throws {
         let query = """
         query FetchLukeAliasedQuery {
-            luke: human(id: "1000") {
+            luke: human(id: 1) {
                 name
             }
         }
@@ -277,28 +312,28 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testFetchLukeAndLeiaAliasedQuery() throws {
         let query = """
         query FetchLukeAndLeiaAliasedQuery {
-            luke: human(id: "1000") {
+            luke: human(id: 1) {
                 name
             }
-            leia: human(id: "1003") {
+            leia: human(id: 4) {
                 name
             }
         }
@@ -314,29 +349,29 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testDuplicateFieldsQuery() throws {
         let query = """
         query DuplicateFieldsQuery {
-            luke: human(id: "1000") {
+            luke: human(id: 1) {
                 name
                 homePlanet { name }
             }
-            leia: human(id: "1003") {
+            leia: human(id: 4) {
                 name
                 homePlanet  { name }
             }
@@ -355,28 +390,28 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testUseFragmentQuery() throws {
         let query = """
         query UseFragmentQuery {
-            luke: human(id: "1000") {
+            luke: human(id: 1) {
                 ...HumanFragment
             }
-            leia: human(id: "1003") {
+            leia: human(id: 4) {
                 ...HumanFragment
             }
         }
@@ -390,33 +425,33 @@ class StarWarsAPITests : XCTestCase {
             data: [
                 "luke": [
                     "name": "Luke Skywalker",
-                    "homePlanet": ["name":"Tatooine"],
+                    "homePlanet": ["name": "Tatooine"],
                 ],
                 "leia": [
                     "name": "Leia Organa",
-                    "homePlanet": ["name":"Alderaan"],
+                    "homePlanet": ["name": "Alderaan"],
                 ],
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testCheckTypeOfR2Query() throws {
         let query = """
         query CheckTypeOfR2Query {
-            hero {
+            hero(episode: JEDI) {
                 __typename
                 name
             }
@@ -431,18 +466,18 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
@@ -455,7 +490,7 @@ class StarWarsAPITests : XCTestCase {
             }
         }
         """
-        
+
         let expected = GraphQLResult(
             data: [
                 "hero": [
@@ -464,25 +499,25 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testSecretBackstoryQuery() throws {
         let query = """
         query SecretBackstoryQuery {
-            hero {
+            hero(episode: NEWHOPE) {
                 name
                 secretBackstory
             }
@@ -494,35 +529,35 @@ class StarWarsAPITests : XCTestCase {
                 "hero": [
                     "name": "R2-D2",
                     "secretBackstory": nil,
-                ]
+                ],
             ],
             errors: [
                 GraphQLError(
                     message: "secretBackstory is secret.",
                     locations: [SourceLocation(line: 4, column: 9)],
                     path: ["hero", "secretBackstory"]
-                )
+                ),
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testSecretBackstoryListQuery() throws {
         let query = """
         query SecretBackstoryListQuery {
-            hero {
+            hero(episode: NEWHOPE) {
                 name
                 friends {
                     name
@@ -531,7 +566,7 @@ class StarWarsAPITests : XCTestCase {
             }
         }
         """
-        
+
         let expected = GraphQLResult(
             data: [
                 "hero": [
@@ -548,9 +583,9 @@ class StarWarsAPITests : XCTestCase {
                         [
                             "name": "Leia Organa",
                             "secretBackstory": nil,
-                        ]
-                    ]
-                ]
+                        ],
+                    ],
+                ],
             ],
             errors: [
                 GraphQLError(
@@ -567,28 +602,28 @@ class StarWarsAPITests : XCTestCase {
                     message: "secretBackstory is secret.",
                     locations: [SourceLocation(line: 6, column: 13)],
                     path: ["hero", "friends", 2, "secretBackstory"]
-                )
+                ),
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
     func testSecretBackstoryAliasQuery() throws {
         let query = """
         query SecretBackstoryAliasQuery {
-            mainHero: hero {
+            mainHero: hero(episode: NEWHOPE) {
                 name
                 story: secretBackstory
             }
@@ -600,114 +635,28 @@ class StarWarsAPITests : XCTestCase {
                 "mainHero": [
                     "name": "R2-D2",
                     "story": nil,
-                ]
+                ],
             ],
             errors: [
                 GraphQLError(
                     message: "secretBackstory is secret.",
                     locations: [SourceLocation(line: 4, column: 9)],
                     path: ["mainHero", "story"]
-                )
-            ]
-        )
-        
-        let expectation = XCTestExpectation()
-
-        api.execute(
-            request: query,
-            context: api.context,
-            on: group
-        ).whenSuccess { result in
-            XCTAssertEqual(result, expected)
-            expectation.fulfill()
-        }
-        
-        wait(for: [expectation], timeout: 10)
-    }
-
-    func testNonNullableFieldsQuery() throws {
-        struct A : Codable {
-            func nullableA(context: NoContext, arguments: NoArguments) -> A? {
-                return A()
-            }
-
-            func nonNullA(context: NoContext, arguments: NoArguments) -> A {
-                return A()
-            }
-
-            func `throws`(context: NoContext, arguments: NoArguments) throws -> String {
-                struct 🏃 : Error, CustomStringConvertible {
-                    let description: String
-                }
-
-                throw 🏃(description: "catch me if you can.")
-            }
-        }
-
-        struct TestResolver {
-            func nullableA(context: NoContext, arguments: NoArguments) -> A? {
-                return A()
-            }
-        }
-        
-        struct MyAPI : API {
-            var resolver: TestResolver = TestResolver()
-            var context: NoContext = NoContext()
-            
-            let schema = try! Schema<TestResolver, NoContext> {
-                Type(A.self) {
-                    Field("nullableA", at: A.nullableA, as: (TypeReference<A>?).self)
-                    Field("nonNullA", at: A.nonNullA, as: TypeReference<A>.self)
-                    Field("throws", at: A.throws)
-                }
-
-                Query {
-                    Field("nullableA", at: TestResolver.nullableA)
-                }
-            }
-        }
-
-        let query = """
-        query {
-            nullableA {
-                nullableA {
-                    nonNullA {
-                        nonNullA {
-                            throws
-                        }
-                    }
-                }
-            }
-        }
-        """
-
-        let expected = GraphQLResult(
-            data: [
-                "nullableA": [
-                    "nullableA": nil,
-                ],
-            ],
-            errors: [
-                GraphQLError(
-                    message: "catch me if you can.",
-                    locations: [SourceLocation(line: 6, column: 21)],
-                    path: ["nullableA", "nullableA", "nonNullA", "nonNullA", "throws"]
                 ),
             ]
         )
-        
+
         let expectation = XCTestExpectation()
-        let api = MyAPI()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
@@ -733,25 +682,25 @@ class StarWarsAPITests : XCTestCase {
         let expected = GraphQLResult(
             data: [
                 "search": [
-                    [ "name": "Tatooine", "diameter": 10465 ],
-                    [ "name": "Han Solo" ],
-                    [ "name": "Leia Organa" ],
-                    [ "name": "C-3PO", "primaryFunction": "Protocol" ],
+                    ["name": "Tatooine", "diameter": 10465],
+                    ["name": "Han Solo"],
+                    ["name": "Leia Organa"],
+                    ["name": "C-3PO", "primaryFunction": "Protocol"],
                 ],
             ]
         )
-        
+
         let expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 
@@ -759,10 +708,10 @@ class StarWarsAPITests : XCTestCase {
         var query: String
         var expected: GraphQLResult
         var expectation: XCTestExpectation
-        
+
         query = """
         query Hero {
-            hero {
+            hero(episode: NEWHOPE) {
                 name
 
                 friends @include(if: false) {
@@ -779,23 +728,23 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         expectation = XCTestExpectation()
 
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
-        
+
         query = """
         query Hero {
-            hero {
+            hero(episode: NEWHOPE) {
                 name
 
                 friends @include(if: true) {
@@ -817,18 +766,18 @@ class StarWarsAPITests : XCTestCase {
                 ],
             ]
         )
-        
+
         expectation = XCTestExpectation()
-        
+
         api.execute(
             request: query,
             context: api.context,
-            on: group
+            on: group!
         ).whenSuccess { result in
             XCTAssertEqual(result, expected)
             expectation.fulfill()
         }
-        
+
         wait(for: [expectation], timeout: 10)
     }
 }
@@ -837,7 +786,8 @@ class StarWarsAPITests : XCTestCase {
 extension StarWarsAPITests {
     static var allTests: [(String, (StarWarsAPITests) -> () throws -> Void)] {
         return [
-            ("testHeroNameQuery", testHeroNameQuery),
+            ("testHeroNameQuery", testHeroNameQuery1),
+            ("testHeroNameQuery", testHeroNameQuery2),
             ("testHeroNameAndFriendsQuery", testHeroNameAndFriendsQuery),
             ("testNestedQuery", testNestedQuery),
             ("testFetchLukeQuery", testFetchLukeQuery),
@@ -850,7 +800,6 @@ extension StarWarsAPITests {
             ("testCheckTypeOfLukeQuery", testCheckTypeOfLukeQuery),
             ("testSecretBackstoryQuery", testSecretBackstoryQuery),
             ("testSecretBackstoryListQuery", testSecretBackstoryListQuery),
-            ("testNonNullableFieldsQuery", testNonNullableFieldsQuery),
             ("testSearchQuery", testSearchQuery),
             ("testDirective", testDirective),
         ]

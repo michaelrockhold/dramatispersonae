@@ -1,6 +1,6 @@
 //
-//  StarWarsCharacterRecord.swift
-//  DramatisPersonae
+//  CharacterRecord.swift
+//  StarWarsDB
 //
 //  Created by Michael Rockhold on 12/6/20.
 //
@@ -58,29 +58,6 @@ struct CharacterRecord: Record {
         builder.column(homePlanetIDExpression, defaultValue:PlanetRecord.unknownPlanet)      // only for non-droids
         builder.column(primaryFunctionExpression, defaultValue: "")   // only for droids
     }
-    
-    func constructCharacter(planetRecord: PlanetRecord?, friends: [FriendRecord], episodes: [Episode]) -> Character? {
-        
-        switch self.species {
-        case .Human:
-            return Human(id: self.characterID.datatypeValue,
-                         name: self.name,
-                         friends: friends.map { f in return f.friendID.datatypeValue },
-                         appearsIn: episodes,
-                         homePlanet:planetRecord!.name)
-            
-        case .Droid:
-            return Droid(id: self.characterID.datatypeValue,
-                         name: self.name,
-                         friends: friends.map { f in return f.friendID.datatypeValue },
-                         appearsIn: episodes,
-                         primaryFunction: self.primaryFunction)
-            
-        case .Wookie:
-            return nil // not yet implemented
-        }
-    }
-
     
     func insert(table: Table) -> Insert {
         return table.insert(CharacterRecord.nameExpression <- name,

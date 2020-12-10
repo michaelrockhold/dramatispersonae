@@ -1,12 +1,12 @@
 //
 //  StarWarsAPI.swift
-//  sqliteplayground
+//  StarWarsAPI
 //
 //  Created by Michael Rockhold on 11/23/20.
 //
 
-public typealias CharacterID = Int64
-public typealias PlanetID = Int64
+public typealias CharacterID = Int
+public typealias PlanetID = Int
 
 public enum Episode : String, Codable, CaseIterable {
     case newHope = "NEWHOPE"
@@ -46,9 +46,9 @@ public struct Human : Character, Codable {
     public let name: String
     public let friends: [CharacterID]
     public let appearsIn: [Episode]
-    public let homePlanet: String
+    public let homePlanet: Planet
     
-    public init(id: CharacterID, name: String, friends: [CharacterID], appearsIn: [Episode], homePlanet: String) {
+    public init(id: CharacterID, name: String, friends: [CharacterID], appearsIn: [Episode], homePlanet: Planet) {
         self.id = id
         self.name = name
         self.friends = friends

@@ -1,6 +1,6 @@
 //
-//  main.swift
-//  sqliteplayground
+//  StarWarsDB.swift
+//  StarWarsDB
 //
 //  Created by Michael Rockhold on 10/31/20.
 //
@@ -8,23 +8,24 @@
 import SQLite
 import StarWarsAPI
 
-struct StarWarsDB {
+public struct StarWarsDB {
     
     // MARK: Tables
-    fileprivate let characters: ConnectedTable<CharacterRecord>
-    fileprivate let episodes: ConnectedTable<EpisodeRecord>
-    fileprivate let appearances: ConnectedTable<AppearanceRecord>
-    fileprivate let friends: ConnectedTable<FriendRecord>
-    fileprivate let planets: ConnectedTable<PlanetRecord>
+    private let characters: ConnectedTable<CharacterRecord>
+    private let episodes: ConnectedTable<EpisodeRecord>
+    private let appearances: ConnectedTable<AppearanceRecord>
+    private let friends: ConnectedTable<FriendRecord>
+    private let planets: ConnectedTable<PlanetRecord>
     
     // MARK: the Database Connection
-    fileprivate let connection: Connection
+    private let connection: Connection
     
-    init(connectionPath: String? = nil) throws {
+    public init(connectionPath: String? = nil) throws {
+        
         if let cp = connectionPath {
             connection = try Connection(cp)
         } else {
-            connection = try Connection(.temporary)
+            connection = try Connection(.inMemory)
         }
         
         episodes = try ConnectedTable<EpisodeRecord>(connection: connection, name: "episodes")
@@ -32,12 +33,20 @@ struct StarWarsDB {
         characters = try ConnectedTable<CharacterRecord>(connection: connection, name: "characters")
         appearances = try ConnectedTable<AppearanceRecord>(connection: connection, name: "appearances")
         friends = try ConnectedTable<FriendRecord>(connection: connection, name: "friends")
+        
+        if connectionPath == nil {
+            do {
+                try self.populateTables()
+            }
+            catch {
+            }
+        }
     }
 }
 
 extension StarWarsDB {
     
-    func populateTables() throws {
+    public func populateTables() throws {
         
         _ = try episodes.insert(info: EpisodeRecord(name: "A New Hope", episodeID: Episode.newHope.rawValue))
         _ = try episodes.insert(info: EpisodeRecord(name: "The Empire Strikes Back", episodeID: Episode.empire.rawValue))
@@ -127,16 +136,16 @@ extension StarWarsDB {
 
 extension Planet {
     
-    init(db: StarWarsDB, planetRecord: PlanetRecord) {
+    fileprivate init(connection: Connection, table: Table, planetRecord: PlanetRecord) {
         var residentNames = [String]()
         do {
-            for row in (try db.connection.prepare(db.characters.table.select(CharacterRecord.nameExpression).where(CharacterRecord.homePlanetIDExpression == planetRecord.planetID))) {
+            for row in (try connection.prepare(table.select(CharacterRecord.nameExpression).where(CharacterRecord.homePlanetIDExpression == planetRecord.planetID))) {
                 
                 residentNames.append(row[CharacterRecord.nameExpression])
             }
         }
         catch {}
-        self.init(id: planetRecord.planetID.datatypeValue,
+        self.init(id: Int(planetRecord.planetID.datatypeValue),
                   name: planetRecord.name,
                   diameter: planetRecord.diameter,
                   rotationPeriod: planetRecord.rotationPeriod,
@@ -181,16 +190,39 @@ extension StarWarsDB : StarWarsContext {
     }
     
     public func getCharacters(query: QueryType) -> [Character] {
+        func constructCharacter(characterRecord: CharacterRecord, homePlanetRecord: PlanetRecord?, friends: [FriendRecord], episodes: [Episode]) -> Character? {
+            
+            switch characterRecord.species {
+            case .Human:
+
+                return Human(id: Int(characterRecord.characterID.datatypeValue),
+                             name: characterRecord.name,
+                             friends: friends.map { f in return Int(f.friendID.datatypeValue) },
+                             appearsIn: episodes,
+                             homePlanet: Planet(connection: connection, table: planets.table, planetRecord: homePlanetRecord!))
+                
+            case .Droid:
+                return Droid(id: Int(characterRecord.characterID.datatypeValue),
+                             name: characterRecord.name,
+                             friends: friends.map { f in return Int(f.friendID.datatypeValue) },
+                             appearsIn: episodes,
+                             primaryFunction: characterRecord.primaryFunction)
+                
+            case .Wookie:
+                return nil // not yet implemented
+            }
+        }
+
         do {
             return (try connection.prepare(query)).compactMap { row in
                 
                 let ci = CharacterRecord(row: row)!
                 
                 do {
-                    return ci.constructCharacter(planetRecord: PlanetRecord(row: try connection.pluck(planets.table
-                                                                                                        .where(PlanetRecord.planetIDExpression == ci.homePlanetID))),
-                                                 friends: getFriendRecords(forCharacterID: ci.characterID),
-                                                 episodes: getEpisodes(for: ci))
+                    return constructCharacter(characterRecord: CharacterRecord(row: row)!,
+                                              homePlanetRecord: PlanetRecord(row: try connection.pluck(planets.table.where(PlanetRecord.planetIDExpression == ci.homePlanetID))),
+                                              friends: getFriendRecords(forCharacterID: ci.characterID),
+                                              episodes: getEpisodes(for: ci))
                 }
                 catch {
                     return nil
@@ -202,21 +234,25 @@ extension StarWarsDB : StarWarsContext {
         }
     }
     
-    public func getCharacter(characterID: CharacterID) -> Character? {
+    public func getCharacter(id: Int) -> Character? {
+        return getCharacter(characterID: CharacterID(datatypeValue: Int64(id)))
+    }
+    
+    private func getCharacter(characterID: CharacterID) -> Character? {
         let found = getCharacters(query: characters.table.select(characters.table[*]).where(CharacterRecord.characterIDExpression == characterID))
         return found.count < 1 ? nil : found[0]
     }
-    
-    func getHuman(id: Int64) -> Human? {
-        let characterID = CharacterID(datatypeValue: id)
+
+    public func getHuman(id: Int) -> Human? {
+        let characterID = CharacterID(datatypeValue: Int64(id))
         guard let character = getCharacter(characterID: characterID) else {
             return nil
         }
         return character as? Human
     }
     
-    func getDroid(id: Int64) -> Droid? {
-        let characterID = CharacterID(datatypeValue: id)
+    public func getDroid(id: Int) -> Droid? {
+        let characterID = CharacterID(datatypeValue: Int64(id))
         guard let character = getCharacter(characterID: characterID) else {
             return nil
         }
@@ -231,7 +267,7 @@ extension StarWarsDB : StarWarsContext {
         do {
             return (try connection.prepare(planets.table.filter(PlanetRecord.nameExpression.like(s))))
                 .compactMap { row in
-                    return Planet(db: self, planetRecord: PlanetRecord(row: row)!)
+                    return Planet(connection: connection, table: characters.table, planetRecord: PlanetRecord(row: row)!)
                 }
         }
         catch {
@@ -253,7 +289,7 @@ extension StarWarsDB : StarWarsContext {
      * Allows us to query for a character"s friends.
      */
     public func getFriends(of character: Character) -> [Character] {
-        return character.friends.compactMap { characterID in getCharacter(characterID: CharacterID(datatypeValue: characterID)) }
+        return character.friends.compactMap { characterID in getCharacter(characterID: CharacterID(datatypeValue: Int64(characterID))) }
     }
     
     /**
@@ -267,18 +303,11 @@ extension StarWarsDB : StarWarsContext {
         // R2-D2 is the hero otherwise.
         return getCharacters(like: "R2-D2")[0] as! Character
     }
-    
-    public func searchCharacterID(characterName: String, characterSpecies: Species) -> CharacterID? {
-        guard let info = try? connection.pluck(characters.table.where(CharacterRecord.nameExpression == characterName && CharacterRecord.speciesExpression == characterSpecies)) else {
-            return nil
-        }
-        return info[CharacterRecord.characterIDExpression]
-    }
-    
+        
     /**
      * Allows us to query for either a Human, Droid, or Planet.
      */
     public func search(query s: String) -> [SearchResult] {
-        return getPlanets(like: s) + getCharacters(like: s)
+        return getPlanets(like: "%\(s)%") + getCharacters(like: "%\(s)%")
     }
 }
